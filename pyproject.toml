@@ -1,0 +1,19 @@
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rootwise"
+version = "0.1.0"
+description = "A local-first tool for repository readiness and safe project preservation."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+rootwise = "rootwise.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["rootwise*"]
