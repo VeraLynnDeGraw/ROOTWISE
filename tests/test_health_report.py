@@ -33,6 +33,33 @@ class HealthReportTests(unittest.TestCase):
                     for item in report["findings"]
                 ),
             )
+            for status in (
+                "present",
+                "not_found",
+                "empty",
+                "unexpected_type",
+                "unreadable",
+            ):
+                self.assertEqual(
+                    summary[status],
+                    sum(
+                        item["status"] == status
+                        for item in report["findings"]
+                    ),
+                    f"Incorrect summary count for {status}",
+                )
+
+    def test_summary_counts_empty_and_unexpected_type_findings(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "README.md").write_text("  \n\t", encoding="utf-8")
+            (root / "LICENSE").mkdir()
+
+            report = build_health_report(root)
+
+            self.assertEqual(report["summary"]["empty"], 1)
+            self.assertEqual(report["summary"]["unexpected_type"], 1)
+            self.assertEqual(report["summary"]["unreadable"], 0)
 
     def test_report_discloses_unperformed_checks(self):
         with tempfile.TemporaryDirectory() as directory:

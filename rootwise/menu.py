@@ -100,15 +100,16 @@ def show_findings(report: dict) -> None:
 
     for finding in report["findings"]:
         status = finding["status"].upper()
+        severity = finding.get("severity", "info").lower()
         label = finding["check"]
         evidence = finding["evidence"]
 
         if status == "PRESENT":
             marker = Neon.paint("[+]", Neon.LIME, Neon.BOLD)
-        elif status in {"WARNING", "WARN"}:
+        elif severity in {"warning", "error"}:
             marker = Neon.paint("[!]", Neon.AMBER, Neon.BOLD)
         else:
-            marker = Neon.paint("[·]", Neon.DIM)
+            marker = Neon.paint("[·]", Neon.CYAN)
 
         print(f"  {marker} {Neon.paint(label, Neon.WHITE)}")
         neon_print(f"      {evidence}", Neon.DIM)
@@ -136,18 +137,28 @@ def show_health_report() -> None:
     neon_print(f"  CHECKS :: {summary['checks_run']}", Neon.WHITE)
 
     section("Summary")
-    neon_print(f"  PRESENT     :: {summary['present']}", Neon.LIME)
-    neon_print(f"  NOT FOUND   :: {summary['not_found']}", Neon.AMBER)
-    neon_print(f"  RECOMMENDED :: {summary['recommendations']}", Neon.CYAN)
-    neon_print(f"  WARNINGS    :: {summary['warnings']}", Neon.AMBER)
-    neon_print(f"  ERRORS      :: {summary['errors']}", Neon.RED)
-    neon_print(f"  INFO        :: {summary['info']}", Neon.CYAN)
+    neon_print(f"  PRESENT        :: {summary['present']}", Neon.LIME)
+    neon_print(f"  NOT FOUND      :: {summary['not_found']}", Neon.AMBER)
+    neon_print(f"  EMPTY          :: {summary['empty']}", Neon.CYAN)
+    neon_print(f"  UNEXPECTED TYPE :: {summary['unexpected_type']}", Neon.AMBER)
+    neon_print(f"  UNREADABLE     :: {summary['unreadable']}", Neon.AMBER)
+    neon_print(f"  RECOMMENDED    :: {summary['recommendations']}", Neon.CYAN)
+    neon_print(f"  WARNINGS       :: {summary['warnings']}", Neon.AMBER)
+    neon_print(f"  ERRORS         :: {summary['errors']}", Neon.RED)
+    neon_print(f"  INFO           :: {summary['info']}", Neon.CYAN)
 
     section("Evidence")
     for finding in report["findings"]:
         status = finding["status"].upper()
-        marker = "[+]" if status == "PRESENT" else "[!]" if status == "NOT_FOUND" else "[·]"
-        color = Neon.LIME if status == "PRESENT" else Neon.AMBER if status == "NOT_FOUND" else Neon.DIM
+        severity = finding.get("severity", "info").lower()
+
+        if status == "PRESENT":
+            marker, color = "[+]", Neon.LIME
+        elif severity in {"warning", "error"}:
+            marker, color = "[!]", Neon.AMBER
+        else:
+            marker, color = "[·]", Neon.CYAN
+
         neon_print(f"  {marker} {finding['check']}", color)
         neon_print(f"      {finding['evidence']}", Neon.DIM)
 

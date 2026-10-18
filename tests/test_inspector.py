@@ -31,6 +31,35 @@ class InspectorTests(unittest.TestCase):
                 "not_found",
             )
 
+    def test_reports_empty_readme_separately(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "README.md").write_text("  \n\t")
+
+            report = inspect_repository(root)
+            findings = {
+                item["check"]: item for item in report["findings"]
+            }
+
+            finding = findings["Project documentation"]
+            self.assertEqual(finding["status"], "empty")
+            self.assertEqual(finding["severity"], "info")
+            self.assertIn("empty", finding["evidence"].lower())
+
+    def test_reports_directory_instead_of_readme(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "README.md").mkdir()
+
+            report = inspect_repository(root)
+            findings = {
+                item["check"]: item for item in report["findings"]
+            }
+
+            finding = findings["Project documentation"]
+            self.assertEqual(finding["status"], "unexpected_type")
+            self.assertEqual(finding["severity"], "warning")
+
     def test_rejects_nonexistent_target(self):
         with tempfile.TemporaryDirectory() as directory:
             missing = Path(directory) / "does-not-exist"

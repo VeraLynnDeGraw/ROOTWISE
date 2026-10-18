@@ -37,6 +37,15 @@ def build_health_report(target: str | Path = ".") -> dict:
         "not_found": sum(
             item["status"] == "not_found" for item in findings
         ),
+        "empty": sum(
+            item["status"] == "empty" for item in findings
+        ),
+        "unexpected_type": sum(
+            item["status"] == "unexpected_type" for item in findings
+        ),
+        "unreadable": sum(
+            item["status"] == "unreadable" for item in findings
+        ),
         "recommendations": len(recommendations),
         "errors": sum(
             item["severity"] == "error" for item in findings
