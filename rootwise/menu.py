@@ -5,6 +5,7 @@ import os
 import sys
 
 from rootwise.inspector import inspect_repository
+from rootwise.health_report import build_health_report
 from rootwise.snapshots import (
     create_snapshot,
     restore_snapshot,
@@ -121,6 +122,43 @@ def show_inspection() -> None:
     target = ask_path("Repository path", ".")
     report = inspect_repository(target)
     show_findings(report)
+
+
+def show_health_report() -> None:
+    """Display an evidence-based repository health report."""
+    target = ask_path("Repository path", ".")
+    report = build_health_report(target)
+    summary = report["summary"]
+    scope = report["evidence_scope"]
+
+    section("Repository health report")
+    neon_print(f"  TARGET :: {report['target']}", Neon.CYAN)
+    neon_print(f"  CHECKS :: {summary['checks_run']}", Neon.WHITE)
+
+    section("Summary")
+    neon_print(f"  PRESENT     :: {summary['present']}", Neon.LIME)
+    neon_print(f"  NOT FOUND   :: {summary['not_found']}", Neon.AMBER)
+    neon_print(f"  WARNINGS    :: {summary['warnings']}", Neon.AMBER)
+    neon_print(f"  ERRORS      :: {summary['errors']}", Neon.RED)
+    neon_print(f"  INFO        :: {summary['info']}", Neon.CYAN)
+
+    section("Evidence")
+    for finding in report["findings"]:
+        status = finding["status"].upper()
+        marker = "[+]" if status == "PRESENT" else "[!]" if status == "NOT_FOUND" else "[·]"
+        color = Neon.LIME if status == "PRESENT" else Neon.AMBER if status == "NOT_FOUND" else Neon.DIM
+        neon_print(f"  {marker} {finding['check']}", color)
+        neon_print(f"      {finding['evidence']}", Neon.DIM)
+
+    section("What was actually checked")
+    neon_print(f"  INSPECTION PERFORMED :: {scope['inspection_performed']}", Neon.CYAN)
+    neon_print(f"  TESTS EXECUTED       :: {scope['tests_executed']}", Neon.AMBER)
+    neon_print(f"  CONTENTS VALIDATED   :: {scope['file_contents_validated']}", Neon.AMBER)
+    neon_print(f"  PUBLICATION APPROVED :: {scope['publication_approved']}", Neon.AMBER)
+
+    section("Limitations")
+    for limitation in report["limitations"]:
+        neon_print(f"  // {limitation}", Neon.PURPLE)
 
 
 def show_snapshot() -> None:
@@ -243,7 +281,8 @@ def show_help() -> None:
         ("3", "VERIFY SNAPSHOT", "Check archive integrity against its manifest."),
         ("4", "RESTORE SNAPSHOT", "Restore files without overwriting existing files."),
         ("5", "SYNC OBSERVATION", "Review local Git changes without publishing them."),
-        ("6", "SYSTEM GUIDE", "Display this reference."),
+        ("6", "REPOSITORY HEALTH", "Summarize checks, evidence, and limitations."),
+        ("7", "SYSTEM GUIDE", "Display this reference."),
         ("q", "DISCONNECT", "Exit the menu without changing project files."),
     ]
 
@@ -282,7 +321,8 @@ def run_menu() -> None:
         "3": ("Verify snapshot", show_verify),
         "4": ("Restore snapshot", show_restore),
         "5": ("Sync observation", show_observation),
-        "6": ("Operator reference", show_help),
+        "6": ("Repository health report", show_health_report),
+        "7": ("Operator reference", show_help),
     }
 
     try:
@@ -325,7 +365,7 @@ def run_menu() -> None:
 
             if action_entry is None:
                 neon_print(
-                    "\n  [INVALID INPUT] Select 1-6 or q.",
+                    "\n  [INVALID INPUT] Select 1-7 or q.",
                     Neon.AMBER,
                 )
                 if not pause():

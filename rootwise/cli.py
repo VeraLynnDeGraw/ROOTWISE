@@ -5,6 +5,7 @@ import argparse
 import sys
 
 from rootwise.inspector import inspect_repository
+from rootwise.health_report import build_health_report
 from rootwise.menu import run_menu
 from rootwise.sync_observer import observe_sync_candidates
 
@@ -81,6 +82,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="Git repository directory (default: current directory).",
     )
 
+    health_parser = subparsers.add_parser(
+        "health",
+        help="Build an evidence-based repository health report.",
+    )
+    health_parser.add_argument(
+        "path",
+        nargs="?",
+        default=".",
+        help="Project directory (default: current directory).",
+    )
+
     subparsers.add_parser("menu", help="Open the interactive menu.")
 
     return parser
@@ -152,6 +164,38 @@ def main(argv: list[str] | None = None) -> int:
 
         if args.command == "inspect":
             print_inspection(args.path)
+            return 0
+
+        if args.command == "health":
+            report = build_health_report(args.path)
+            summary = report["summary"]
+            scope = report["evidence_scope"]
+
+            print("ROOTWISE REPOSITORY HEALTH REPORT")
+            print(f"Repository: {report['target']}")
+            print("\nSUMMARY")
+            print(f"Checks performed: {summary['checks_run']}")
+            print(f"Items present:    {summary['present']}")
+            print(f"Items not found:  {summary['not_found']}")
+            print(f"Warnings:         {summary['warnings']}")
+            print(f"Errors:           {summary['errors']}")
+            print(f"Info findings:    {summary['info']}")
+
+            print("\nFINDINGS")
+            for item in report["findings"]:
+                status = item["status"].replace("_", " ").upper()
+                print(f"[{status}] {item['check']}")
+                print(f"  Evidence: {item['evidence']}")
+
+            print("\nEVIDENCE SCOPE")
+            print(f"Inspection performed: {scope['inspection_performed']}")
+            print(f"Tests executed:        {scope['tests_executed']}")
+            print(f"File contents checked: {scope['file_contents_validated']}")
+            print(f"Publication approved:  {scope['publication_approved']}")
+
+            print("\nLIMITATIONS")
+            for limitation in report["limitations"]:
+                print(f"- {limitation}")
             return 0
 
         if args.command == "snapshot":
