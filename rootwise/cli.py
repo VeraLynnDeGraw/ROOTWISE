@@ -123,10 +123,14 @@ def main(argv: list[str] | None = None) -> int:
 
             summary = report["summary"]
             print("\nSUMMARY")
-            print(f"Changed files: {summary['changed_files']}")
-            print(f"Documents:     {summary['documents']}")
-            print(f"Other files:   {summary['other_files']}")
-            print(f"Risk flags:    {summary['risk_flags']}")
+            print(f"Changed files:   {summary['changed_files']}")
+            print(f"Documents:       {summary['documents']}")
+            print(f"Project configs: {summary['project_configs']}")
+            print(f"Licenses:        {summary['licenses']}")
+            print(f"Source files:    {summary['source_files']}")
+            print(f"Test files:      {summary['test_files']}")
+            print(f"Other files:     {summary['other_files']}")
+            print(f"Risk flags:      {summary['risk_flags']}")
 
             print("\nCHANGES")
             if not report["findings"]:

@@ -85,6 +85,40 @@ class SyncObserverTests(unittest.TestCase):
         self.assertEqual(report["publication_status"], "REVIEW_REQUIRED")
         self.assertIn(str(self.root), report["repository"])
 
+    def test_classifies_project_configuration(self):
+        (self.root / "pyproject.toml").write_text("[project]\nname='example'\n")
+
+        report = observe_sync_candidates(self.root)
+        finding = next(
+            item for item in report["findings"]
+            if item["path"] == "pyproject.toml"
+        )
+
+        self.assertEqual(finding["kind"], "project_config")
+        self.assertTrue(finding["review_required"])
+
+    def test_classifies_source_and_test_files(self):
+        (self.root / "example.py").write_text("print('example')\n")
+        (self.root / "tests").mkdir()
+        (self.root / "tests" / "test_example.py").write_text("def test_example(): pass\n")
+
+        report = observe_sync_candidates(self.root)
+        kinds = {item["path"]: item["kind"] for item in report["findings"]}
+
+        self.assertEqual(kinds["example.py"], "source_code")
+        self.assertEqual(kinds["tests/test_example.py"], "test_code")
+
+    def test_classifies_license_file(self):
+        (self.root / "LICENSE").write_text("Example license text\n")
+
+        report = observe_sync_candidates(self.root)
+        finding = next(
+            item for item in report["findings"]
+            if item["path"] == "LICENSE"
+        )
+
+        self.assertEqual(finding["kind"], "license")
+
     def test_rejects_directory_outside_git_repository(self):
         with tempfile.TemporaryDirectory() as outside:
             with self.assertRaises(ValueError):

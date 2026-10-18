@@ -11,6 +11,51 @@ DOCUMENT_SUFFIXES = {
     ".md", ".mdx", ".rst", ".txt", ".adoc", ".org",
 }
 
+SOURCE_SUFFIXES = {
+    ".py", ".pyi", ".js", ".jsx", ".ts", ".tsx",
+    ".c", ".h", ".cpp", ".hpp", ".rs", ".go",
+    ".java", ".kt", ".swift", ".sh", ".bash",
+}
+
+CONFIG_NAMES = {
+    "pyproject.toml", "setup.cfg", "setup.py",
+    "tox.ini", "pytest.ini", "requirements.txt",
+    "package.json", "package-lock.json", "pnpm-lock.yaml",
+    "yarn.lock", "cargo.toml", "cargo.lock",
+    "makefile", "dockerfile", ".gitignore",
+    ".gitattributes", ".editorconfig",
+}
+
+LICENSE_NAMES = {
+    "license", "license.md", "license.txt",
+    "copying", "copying.md", "copying.txt",
+}
+
+
+def _classify_path(path: str) -> str:
+    """Classify a changed path without judging whether it is safe to publish."""
+    candidate = Path(path)
+    name = candidate.name.lower()
+    suffix = candidate.suffix.lower()
+    parts = {part.lower() for part in candidate.parts}
+
+    if "tests" in parts or "test" in parts:
+        return "test_code"
+
+    if name in LICENSE_NAMES or name.startswith("license."):
+        return "license"
+
+    if name in CONFIG_NAMES or name.endswith(".toml"):
+        return "project_config"
+
+    if suffix in DOCUMENT_SUFFIXES:
+        return "document"
+
+    if suffix in SOURCE_SUFFIXES:
+        return "source_code"
+
+    return "other_file"
+
 SENSITIVE_NAME_PARTS = {
     ".env",
     "secret",
@@ -97,15 +142,14 @@ def _parse_status(output: str) -> list[dict[str, Any]]:
 
         label = _status_label(code)
         sensitivity = _sensitivity(path)
-        suffix = Path(path).suffix.lower()
-        is_document = suffix in DOCUMENT_SUFFIXES
+        kind = _classify_path(path)
 
         findings.append(
             {
                 "path": path,
                 "status_code": code,
                 "status": label,
-                "kind": "document" if is_document else "other_file",
+                "kind": kind,
                 "original_path": original_path,
                 "review_required": True,
                 "risk": sensitivity,
@@ -159,6 +203,18 @@ def observe_sync_candidates(project_path: str | Path = ".") -> dict[str, Any]:
             "changed_files": len(findings),
             "documents": sum(
                 item["kind"] == "document" for item in findings
+            ),
+            "project_configs": sum(
+                item["kind"] == "project_config" for item in findings
+            ),
+            "licenses": sum(
+                item["kind"] == "license" for item in findings
+            ),
+            "source_files": sum(
+                item["kind"] == "source_code" for item in findings
+            ),
+            "test_files": sum(
+                item["kind"] == "test_code" for item in findings
             ),
             "other_files": sum(
                 item["kind"] == "other_file" for item in findings
