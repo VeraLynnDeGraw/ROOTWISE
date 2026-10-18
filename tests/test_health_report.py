@@ -45,6 +45,27 @@ class HealthReportTests(unittest.TestCase):
             self.assertFalse(scope["publication_approved"])
             self.assertTrue(report["limitations"])
 
+    def test_missing_recommended_files_are_reported_separately(self):
+        with tempfile.TemporaryDirectory() as directory:
+            report = build_health_report(directory)
+
+            self.assertEqual(report["summary"]["recommendations"], 2)
+            self.assertEqual(
+                {item["path"] for item in report["recommendations"]},
+                {"CONTRIBUTING.md", "SECURITY.md"},
+            )
+
+    def test_present_recommended_files_clear_recommendations(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "CONTRIBUTING.md").write_text("# Contributions\\n")
+            (root / "SECURITY.md").write_text("# Security\\n")
+
+            report = build_health_report(root)
+
+            self.assertEqual(report["summary"]["recommendations"], 0)
+            self.assertEqual(report["recommendations"], [])
+
     def test_rejects_nonexistent_target(self):
         with tempfile.TemporaryDirectory() as directory:
             missing = Path(directory) / "missing"

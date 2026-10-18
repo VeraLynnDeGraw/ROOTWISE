@@ -138,6 +138,7 @@ def show_health_report() -> None:
     section("Summary")
     neon_print(f"  PRESENT     :: {summary['present']}", Neon.LIME)
     neon_print(f"  NOT FOUND   :: {summary['not_found']}", Neon.AMBER)
+    neon_print(f"  RECOMMENDED :: {summary['recommendations']}", Neon.CYAN)
     neon_print(f"  WARNINGS    :: {summary['warnings']}", Neon.AMBER)
     neon_print(f"  ERRORS      :: {summary['errors']}", Neon.RED)
     neon_print(f"  INFO        :: {summary['info']}", Neon.CYAN)
@@ -149,6 +150,17 @@ def show_health_report() -> None:
         color = Neon.LIME if status == "PRESENT" else Neon.AMBER if status == "NOT_FOUND" else Neon.DIM
         neon_print(f"  {marker} {finding['check']}", color)
         neon_print(f"      {finding['evidence']}", Neon.DIM)
+
+    section("Recommendations")
+    if report["recommendations"]:
+        for item in report["recommendations"]:
+            neon_print(
+                f"  [>] {item['check']} :: {item['path']}",
+                Neon.CYAN,
+            )
+            neon_print(f"      {item['reason']}", Neon.DIM)
+    else:
+        neon_print("  No missing recommended files detected.", Neon.LIME)
 
     section("What was actually checked")
     neon_print(f"  INSPECTION PERFORMED :: {scope['inspection_performed']}", Neon.CYAN)

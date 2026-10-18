@@ -177,6 +177,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Checks performed: {summary['checks_run']}")
             print(f"Items present:    {summary['present']}")
             print(f"Items not found:  {summary['not_found']}")
+            print(f"Recommendations:  {summary['recommendations']}")
             print(f"Warnings:         {summary['warnings']}")
             print(f"Errors:           {summary['errors']}")
             print(f"Info findings:    {summary['info']}")
@@ -186,6 +187,14 @@ def main(argv: list[str] | None = None) -> int:
                 status = item["status"].replace("_", " ").upper()
                 print(f"[{status}] {item['check']}")
                 print(f"  Evidence: {item['evidence']}")
+
+            print("\nRECOMMENDATIONS")
+            if report["recommendations"]:
+                for item in report["recommendations"]:
+                    print(f"[RECOMMENDED] {item['check']}: {item['path']}")
+                    print(f"  Reason: {item['reason']}")
+            else:
+                print("No missing recommended files detected.")
 
             print("\nEVIDENCE SCOPE")
             print(f"Inspection performed: {scope['inspection_performed']}")
