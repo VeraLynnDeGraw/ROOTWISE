@@ -18,10 +18,14 @@ EXCLUDED_DIRS = {
 
 
 def _should_exclude(path: Path) -> bool:
+    """Exclude development artifacts and environment secrets."""
     if any(part in EXCLUDED_DIRS for part in path.parts):
         return True
 
-    if path.name == ".env" or path.name.startswith(".env."):
+    if any(
+        part == ".env" or part.startswith(".env.")
+        for part in path.parts
+    ):
         return True
 
     return False
@@ -75,7 +79,8 @@ def create_snapshot(project_path, output_dir) -> dict:
             "sha256": digest,
             "file_count": len(files),
             "files": [
-                str(path.relative_to(project)) for path in files
+                path.relative_to(project).as_posix()
+                for path in files
             ],
         }
 
@@ -97,6 +102,7 @@ def create_snapshot(project_path, output_dir) -> dict:
 
 
 def verify_snapshot(archive_path, manifest_path) -> dict:
+    """Validate manifest metadata, archive contents, and SHA-256 integrity."""
     archive = Path(archive_path).expanduser().resolve()
     manifest_file = Path(manifest_path).expanduser().resolve()
 
@@ -116,6 +122,41 @@ def verify_snapshot(archive_path, manifest_path) -> dict:
     if not isinstance(manifest, dict):
         raise ValueError("Snapshot manifest must contain a JSON object.")
 
+    declared_archive = manifest.get("archive")
+
+    if (
+        not isinstance(declared_archive, str)
+        or declared_archive != archive.name
+    ):
+        raise ValueError(
+            "Manifest archive name does not match the supplied archive."
+        )
+
+    file_count = manifest.get("file_count")
+
+    if (
+        isinstance(file_count, bool)
+        or not isinstance(file_count, int)
+        or file_count < 0
+    ):
+        raise ValueError("Manifest contains an invalid file count.")
+
+    files = manifest.get("files")
+
+    if (
+        not isinstance(files, list)
+        or any(not isinstance(item, str) for item in files)
+    ):
+        raise ValueError("Manifest contains an invalid file list.")
+
+    if file_count != len(files):
+        raise ValueError(
+            "Manifest file count does not match its file list."
+        )
+
+    if len(files) != len(set(files)):
+        raise ValueError("Manifest contains duplicate file entries.")
+
     expected_hash = manifest.get("sha256")
 
     if (
@@ -128,6 +169,23 @@ def verify_snapshot(archive_path, manifest_path) -> dict:
     ):
         raise ValueError("Manifest does not contain a valid SHA-256 hash.")
 
+    try:
+        with tarfile.open(archive, "r:gz") as bundle:
+            archive_files = [
+                member.name
+                for member in bundle.getmembers()
+                if not member.isdir()
+            ]
+    except (tarfile.TarError, OSError) as error:
+        raise ValueError(
+            "Snapshot archive is not a valid gzip tar archive."
+        ) from error
+
+    if sorted(files) != sorted(archive_files):
+        raise ValueError(
+            "Manifest file list does not match archive contents."
+        )
+
     digest = hashlib.sha256(archive.read_bytes()).hexdigest()
 
     return {
@@ -136,8 +194,8 @@ def verify_snapshot(archive_path, manifest_path) -> dict:
         "actual_sha256": digest,
     }
 
-
 def restore_snapshot(archive_path, manifest_path, destination) -> dict:
+    """Restore verified regular files without overwriting existing files."""
     archive = Path(archive_path).expanduser().resolve()
     destination = Path(destination).expanduser().resolve()
 
@@ -202,7 +260,7 @@ def restore_snapshot(archive_path, manifest_path, destination) -> dict:
                     "Snapshot contains conflicting file paths."
                 )
 
-    # Preflight existing targets before creating or writing anything.
+    # Preflight all targets before creating or writing anything.
     for member, _, target in checked_members:
         if target.is_symlink():
             raise ValueError(
@@ -219,6 +277,7 @@ def restore_snapshot(archive_path, manifest_path, destination) -> dict:
                 f"Restore directory conflicts with an existing path: {target}"
             )
 
+    destination_existed = destination.exists()
     destination.mkdir(parents=True, exist_ok=True)
 
     created_files = []
@@ -226,8 +285,8 @@ def restore_snapshot(archive_path, manifest_path, destination) -> dict:
 
     def ensure_directory(directory: Path) -> None:
         missing = []
-
         current = directory
+
         while current != destination and not current.exists():
             missing.append(current)
             current = current.parent
@@ -238,37 +297,47 @@ def restore_snapshot(archive_path, manifest_path, destination) -> dict:
 
     try:
         with tarfile.open(archive, "r:gz") as bundle:
-            for member, relative, target in checked_members:
+            for member, _, target in checked_members:
                 if member.isdir():
                     ensure_directory(target)
                     continue
 
                 ensure_directory(target.parent)
 
-                # Exclusive creation prevents overwriting a file.
                 source = bundle.extractfile(member)
+
                 if source is None:
                     raise ValueError(
                         "Snapshot contains a file that cannot be read."
                     )
 
-                with source, target.open("xb") as output_file:
-                    while True:
-                        chunk = source.read(1024 * 1024)
-                        if not chunk:
-                            break
-                        output_file.write(chunk)
+                with source:
+                    with target.open("xb") as output_file:
+                        # Track immediately so a partial write can be undone.
+                        created_files.append(target)
 
-                created_files.append(target)
+                        while True:
+                            chunk = source.read(1024 * 1024)
+
+                            if not chunk:
+                                break
+
+                            output_file.write(chunk)
 
     except Exception:
-        # Remove only files and empty directories created by this restore.
+        # Remove only files created by this restore, including partial files.
         for path in reversed(created_files):
             path.unlink(missing_ok=True)
 
         for path in reversed(created_dirs):
             try:
                 path.rmdir()
+            except OSError:
+                pass
+
+        if not destination_existed:
+            try:
+                destination.rmdir()
             except OSError:
                 pass
 
