@@ -176,7 +176,7 @@ class SnapshotTests(unittest.TestCase):
             project = base / "project"
             output = base / "snapshots"
             project.mkdir()
-            (project / "README.md").write_text("# Example\\n")
+            (project / "README.md").write_text("# Example\n")
 
             result = create_snapshot(project, output)
             manifest_path = Path(result["manifest"])
