@@ -8,6 +8,8 @@ import os
 import sys
 from pathlib import Path
 
+from rootwise.settings import load_settings
+
 
 class Neon:
     """Cyberpunk botanical palette with a plain-text fallback."""
@@ -39,7 +41,8 @@ class Neon:
     def enabled(cls) -> bool:
         """Enable ANSI styling only when the output supports it."""
         return (
-            sys.stdout.isatty()
+            load_settings()["color_enabled"]
+            and sys.stdout.isatty()
             and "NO_COLOR" not in os.environ
             and os.environ.get("TERM") != "dumb"
         )

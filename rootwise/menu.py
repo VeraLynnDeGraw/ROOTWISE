@@ -10,6 +10,9 @@ from rootwise.snapshots import (
     verify_snapshot,
 )
 from rootwise.sync_observer import observe_sync_candidates
+from rootwise.workspace import build_tree_lines, clone_repository
+from rootwise.handoff import build_handoff, save_handoff
+from rootwise.settings import load_settings, save_settings
 
 
 from rootwise.cybergarden import (
@@ -230,6 +233,173 @@ def show_observation() -> None:
         neon_print(f"  // {limitation}", Neon.PURPLE)
 
 
+def show_clone() -> None:
+    """Clone a repository after explicit operator authorization."""
+    repository = input(
+        Neon.paint("  Git repository URL or local path: ", Neon.CYAN, Neon.BOLD)
+    ).strip()
+    if not repository:
+        neon_print("  [CANCELLED] No repository was provided.", Neon.AMBER)
+        return
+
+    destination = ask_path("Clone destination")
+
+    section("Clone authorization")
+    neon_print("  OPERATION :: GIT CLONE", Neon.CYAN, Neon.BOLD)
+    neon_print(f"  SOURCE    :: {repository}", Neon.WHITE)
+    neon_print(f"  DESTINATION :: {destination}", Neon.WHITE)
+    neon_print("  Existing destinations will not be overwritten.", Neon.DIM)
+    neon_print("  Git may access the network when the source is remote.", Neon.DIM)
+
+    confirmation = input(
+        Neon.paint("  Type CLONE to proceed: ", Neon.MAGENTA, Neon.BOLD)
+    ).strip()
+
+    if confirmation != "CLONE":
+        neon_print("  [CANCELLED] No repository was cloned.", Neon.AMBER)
+        return
+
+    target = clone_repository(repository, destination)
+    section("Clone complete")
+    neon_print("  [OK] REPOSITORY CLONED", Neon.LIME, Neon.BOLD)
+    neon_print(f"  SOURCE      :: {repository}", Neon.CYAN)
+    neon_print(f"  DESTINATION :: {target}", Neon.CYAN)
+
+
+def show_tree() -> None:
+    """Display a project's directory tree without running project code."""
+    target = ask_path("Project path", ".")
+    all_choice = input(
+        Neon.paint(
+            "  Include generated and normally excluded entries? [y/N]: ",
+            Neon.CYAN,
+        )
+    ).strip().lower()
+    include_all = all_choice in {"y", "yes"}
+
+    depth_text = input(
+        Neon.paint("  Maximum depth [unlimited]: ", Neon.CYAN)
+    ).strip()
+
+    try:
+        max_depth = int(depth_text) if depth_text else None
+    except ValueError:
+        neon_print(
+            "  Invalid depth: enter a positive whole number or press Enter for unlimited.",
+            Neon.AMBER,
+        )
+        return
+
+    if max_depth is not None and max_depth < 1:
+        neon_print(
+            "  Invalid depth: maximum depth must be at least 1.",
+            Neon.AMBER,
+        )
+        return
+
+    lines = build_tree_lines(
+        target,
+        include_all=include_all,
+        max_depth=max_depth,
+    )
+
+    section("Project tree")
+    neon_print(f"  TARGET :: {target}", Neon.DIM)
+    neon_print(
+        "  VIEW   :: ALL ENTRIES" if include_all
+        else "  VIEW   :: STANDARD PROJECT FILES",
+        Neon.PURPLE,
+    )
+    for index, tree_line in enumerate(lines):
+        neon_print(
+            tree_line,
+            Neon.LIME if index == 0 else Neon.CYAN,
+        )
+
+
+def show_handoff() -> None:
+    """Build a local Markdown handoff for any recipient."""
+    target = ask_path("Project path", ".")
+    task = input(
+        Neon.paint("  Task or context to preserve: ", Neon.CYAN, Neon.BOLD)
+    ).strip()
+
+    if not task:
+        neon_print("  [CANCELLED] A task description is required.", Neon.AMBER)
+        return
+
+    files_text = input(
+        Neon.paint(
+            "  Additional project-relative files (comma-separated, optional): ",
+            Neon.CYAN,
+        )
+    ).strip()
+    selected_files = [
+        item.strip() for item in files_text.split(",") if item.strip()
+    ]
+
+    output_path = input(
+        Neon.paint(
+            "  Output file (blank prints Markdown to the terminal): ",
+            Neon.CYAN,
+        )
+    ).strip()
+
+    content = build_handoff(
+        project_path=target,
+        task=task,
+        selected_files=selected_files,
+    )
+
+    if output_path:
+        destination = save_handoff(content, output_path)
+        section("Handoff saved")
+        neon_print(f"  [OK] {destination}", Neon.LIME, Neon.BOLD)
+        neon_print("  Review the file before sharing it.", Neon.DIM)
+    else:
+        print(content, end="")
+
+
+def show_settings() -> None:
+    """Display and change persistent local operator settings."""
+    current = load_settings()
+    section("Operator Settings")
+    neon_print(
+        f"  Color styling: {'ON' if current['color_enabled'] else 'OFF'}",
+        Neon.LIME,
+    )
+    neon_print(f"  Network mode:  {current['network_mode'].upper()}", Neon.CYAN)
+    neon_print("  Changing network mode never starts a connection.", Neon.DIM)
+    neon_print()
+    neon_print("  [c] Change color styling")
+    neon_print("  [n] Change network mode")
+    neon_print("  [Enter] Return to the console")
+
+    choice = input("  Setting to change: ").strip().lower()
+
+    if choice == "c":
+        value = input("  Color styling [on/off]: ").strip().lower()
+        if value not in {"on", "off"}:
+            neon_print("  No change: enter on or off.", Neon.AMBER)
+            return
+        current["color_enabled"] = value == "on"
+    elif choice == "n":
+        value = input("  Network mode [offline/online]: ").strip().lower()
+        if value not in {"offline", "online"}:
+            neon_print("  No change: enter offline or online.", Neon.AMBER)
+            return
+        current["network_mode"] = value
+    elif choice:
+        neon_print("  No change: choose c, n, or press Enter.", Neon.AMBER)
+        return
+    else:
+        return
+
+    destination = save_settings(current)
+    neon_print(f"  Settings saved locally: {destination}", Neon.LIME)
+    neon_print("  Changes apply to the next operation.", Neon.DIM)
+
+
 def show_help() -> None:
     section("Operator reference")
 
@@ -241,6 +411,10 @@ def show_help() -> None:
         ("5", "SYNC OBSERVATION", "Review local Git changes without publishing them."),
         ("6", "REPOSITORY HEALTH", "Summarize checks, evidence, and limitations."),
         ("7", "SYSTEM GUIDE", "Display this reference."),
+        ("8", "CLONE REPOSITORY", "Clone into a new destination after confirmation."),
+        ("9", "PROJECT TREE", "Browse files without executing project code."),
+        ("10", "HANDOFF", "Prepare project context for another recipient."),
+        ("11", "OPERATOR SETTINGS", "Change local color and network preferences."),
         ("q", "DISCONNECT", "Exit the menu without changing project files."),
     ]
 
@@ -281,6 +455,10 @@ def run_menu() -> None:
         "5": ("Sync observation", show_observation),
         "6": ("Repository health report", show_health_report),
         "7": ("Operator reference", show_help),
+        "8": ("Clone repository", show_clone),
+        "9": ("Project tree", show_tree),
+        "10": ("Handoff", show_handoff),
+        "11": ("Operator Settings", show_settings),
     }
 
     try:
@@ -304,6 +482,14 @@ def run_menu() -> None:
 
             menu_zone("Field Guide", Neon.PINK)
             menu_item("7", actions["7"][0])
+
+            menu_zone("Workspace", Neon.CYAN)
+            menu_item("8", actions["8"][0])
+            menu_item("9", actions["9"][0])
+            menu_item("10", actions["10"][0])
+
+            menu_zone("Operator Settings", Neon.PINK)
+            menu_item("11", actions["11"][0])
 
             menu_item("q", "Disconnect", Neon.CYAN, Neon.DIM)
             menu_frame_bottom()
@@ -330,7 +516,7 @@ def run_menu() -> None:
 
             if action_entry is None:
                 neon_print(
-                    "\n  [INVALID INPUT] Select 1-7 or q.",
+                    "\n  [INVALID INPUT] Select 1-11 or q.",
                     Neon.AMBER,
                 )
                 if not pause():

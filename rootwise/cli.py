@@ -13,6 +13,9 @@ from rootwise.snapshots import (
     restore_snapshot,
     verify_snapshot,
 )
+from rootwise.workspace import build_tree_lines, clone_repository
+from rootwise.handoff import build_handoff, save_handoff
+from rootwise.settings import load_settings, save_settings
 
 
 def _heading(title: str) -> None:
@@ -227,6 +230,104 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="?",
         default=".",
         help="Project directory (default: current directory).",
+    )
+
+    clone_parser = subparsers.add_parser(
+        "clone",
+        help="Clone a Git repository into a new destination.",
+        description=(
+            "Clone a Git repository without replacing an existing destination."
+        ),
+    )
+    clone_parser.add_argument(
+        "repository",
+        help="Git repository URL or local repository path.",
+    )
+    clone_parser.add_argument(
+        "destination",
+        help="New destination path. It must not already exist.",
+    )
+
+    tree_parser = subparsers.add_parser(
+        "tree",
+        help="Display a project's directory tree.",
+        description=(
+            "Show project files and directories without executing project code."
+        ),
+    )
+    tree_parser.add_argument(
+        "path",
+        nargs="?",
+        default=".",
+        help="Project directory (default: current directory).",
+    )
+    tree_parser.add_argument(
+        "--all",
+        action="store_true",
+        dest="show_all",
+        help="Include normally excluded directories and generated files.",
+    )
+    tree_parser.add_argument(
+        "--max-depth",
+        type=int,
+        default=None,
+        help="Limit displayed directory depth (minimum: 1).",
+    )
+
+    handoff_parser = subparsers.add_parser(
+        "handoff",
+        help="Prepare a local, recipient-neutral project handoff.",
+        description=(
+            "Build a reviewable Markdown handoff from project context "
+            "and explicitly selected files. Does not execute project code "
+            "or transmit the handoff."
+        ),
+    )
+    handoff_parser.add_argument(
+        "path",
+        nargs="?",
+        default=".",
+        help="Project directory (default: current directory).",
+    )
+    handoff_parser.add_argument(
+        "--task",
+        required=True,
+        help="Task, goal, or context to preserve in the handoff.",
+    )
+    handoff_parser.add_argument(
+        "--file",
+        action="append",
+        default=[],
+        dest="selected_files",
+        help="Include a project-relative text file. May be repeated.",
+    )
+    handoff_parser.add_argument(
+        "--output",
+        default=None,
+        help="Write Markdown to a new file instead of standard output.",
+    )
+    handoff_parser.add_argument(
+        "--max-tree-depth",
+        type=int,
+        default=3,
+        help="Maximum project-tree depth (default: 3).",
+    )
+
+    settings_parser = subparsers.add_parser(
+        "settings",
+        help="Display or change local operator settings.",
+        description=(
+            "Manage local color and network preferences. Changing network "
+            "mode does not initiate a network connection."
+        ),
+    )
+    settings_parser.add_argument(
+        "--color", choices=("on", "off"),
+        help="Enable or disable terminal color styling.",
+    )
+    settings_parser.add_argument(
+        "--network", choices=("offline", "online"),
+        help="Set the mode for explicitly requested remote operations.",
     )
 
     subparsers.add_parser(
@@ -467,6 +568,31 @@ def _run_restore(
     return 0
 
 
+def _run_settings(
+    color: str | None = None,
+    network: str | None = None,
+) -> int:
+    """Display or update persistent local operator settings."""
+    current = load_settings()
+
+    if color is not None:
+        current["color_enabled"] = color == "on"
+    if network is not None:
+        current["network_mode"] = network
+
+    if color is not None or network is not None:
+        destination = save_settings(current)
+        print(f"Settings saved locally: {destination}")
+
+    current = load_settings()
+    print("\nROOTWISE OPERATOR SETTINGS")
+    print("--------------------------")
+    print(f"Color styling: {'ON' if current['color_enabled'] else 'OFF'}")
+    print(f"Network mode:  {current['network_mode'].upper()}")
+    print("Network access occurs only for explicitly requested operations.")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     """Run a ROOTWISE command."""
     parser = build_parser()
@@ -477,8 +603,45 @@ def main(argv: list[str] | None = None) -> int:
             run_menu()
             return 0
 
+        if args.command == "settings":
+            return _run_settings(args.color, args.network)
+
         if args.command == "observe":
             return _run_observe(args.path)
+
+        if args.command == "clone":
+            target = clone_repository(args.repository, args.destination)
+            _heading("ROOTWISE REPOSITORY CLONE")
+            _status("SUCCESS", "Repository cloned.", Neon.LIME)
+            _field("Source:", args.repository)
+            _field("Destination:", target)
+            return 0
+
+        if args.command == "tree":
+            lines = build_tree_lines(
+                args.path,
+                include_all=args.show_all,
+                max_depth=args.max_depth,
+            )
+            _heading("ROOTWISE PROJECT TREE")
+            for index, tree_line in enumerate(lines):
+                color = Neon.LIME if index == 0 else Neon.CYAN
+                neon_print(tree_line, color)
+            return 0
+
+        if args.command == "handoff":
+            content = build_handoff(
+                project_path=args.path,
+                task=args.task,
+                selected_files=args.selected_files,
+                max_tree_depth=args.max_tree_depth,
+            )
+            if args.output:
+                destination = save_handoff(content, args.output)
+                print(f"Handoff saved locally: {destination}")
+            else:
+                print(content, end="")
+            return 0
 
         if args.command == "inspect":
             print_inspection(args.path)

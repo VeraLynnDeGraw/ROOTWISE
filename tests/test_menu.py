@@ -5,7 +5,7 @@ import unittest
 from contextlib import redirect_stdout
 from unittest.mock import patch
 
-from rootwise.menu import run_menu
+from rootwise.menu import run_menu, show_tree
 
 
 class MenuFlowTests(unittest.TestCase):
@@ -36,6 +36,9 @@ class MenuFlowTests(unittest.TestCase):
             "[5] Sync observation",
             "[6] Repository health report",
             "[7] Operator reference",
+            "[8] Clone repository",
+            "[9] Project tree",
+            "[10] Handoff",
             "[q] Disconnect",
         ):
             self.assertIn(option, rendered)
@@ -78,7 +81,7 @@ class MenuFlowTests(unittest.TestCase):
 
         rendered = output.getvalue()
 
-        self.assertIn("[INVALID INPUT] Select 1-7 or q.", rendered)
+        self.assertIn("[INVALID INPUT] Select 1-11 or q.", rendered)
         self.assertGreaterEqual(
             rendered.count("ROOTWISE://LOCAL"),
             2,
@@ -87,6 +90,16 @@ class MenuFlowTests(unittest.TestCase):
             "SESSION CLOSED // YOUR FILES REMAIN YOURS",
             rendered,
         )
+
+    def test_tree_rejects_non_numeric_depth_with_helpful_message(self):
+        output = io.StringIO()
+
+        with patch("builtins.input", side_effect=[".", "n", "abc"]):
+            with redirect_stdout(output):
+                show_tree()
+
+        self.assertIn("Invalid depth", output.getvalue())
+        self.assertIn("positive whole number", output.getvalue())
 
     def test_menu_uses_local_presentation_module(self):
         import rootwise.menu as menu_module

@@ -46,6 +46,24 @@ Snapshots are preservation tools, not substitutes for independent backups or a c
 
 Observe repository status and classify potential synchronization candidates. ROOTWISE reports changes for review rather than silently staging or publishing them.
 
+### Cloneable Workspace and Project Tree
+
+Clone Git repositories into new destinations without replacing existing paths. Browse project structure with a readable tree view that hides common generated directories by default. Use depth limits to keep large projects navigable, or explicitly include normally excluded entries when investigating build environments and generated files.
+
+Cloning can access the network when a remote URL is used. Tree browsing does not execute project code.
+
+### Handoff and Continuity
+
+Prepare a recipient-neutral Markdown handoff containing a task description,
+a bounded project tree, the README when available, and explicitly selected
+project files. Handoffs are generated locally and can be printed to standard
+output or saved to a new file without overwriting an existing destination.
+
+The handoff does not execute project code, run tests, or transmit content.
+Sensitive-looking paths are filtered, but filename checks cannot guarantee
+that all included text is safe to share. Review the complete document before
+sharing it.
+
 ### Operator Guidance
 
 Use a guided terminal menu to access repository scans, health reports, snapshot operations, synchronization observation, and reference information.
@@ -145,6 +163,10 @@ development.
 | `snapshot [PATH]` | Create a preservation archive and its manifest. |
 | `verify ARCHIVE MANIFEST` | Verify a snapshot against its manifest. |
 | `restore ARCHIVE MANIFEST DESTINATION` | Restore a verified snapshot to a destination, subject to safety checks. |
+| `clone REPOSITORY DESTINATION` | Clone a Git repository into a destination that must not already exist. |
+| `tree [PATH] [--all] [--max-depth N]` | Display a project tree with optional generated entries and depth limits. |
+| `handoff [PATH] --task TEXT [--file PATH] [--output FILE]` | Prepare a local Markdown handoff for any recipient. |
+| `settings [--color on|off] [--network offline|online]` | Display or change local operator preferences. |
 | `menu` | Open the interactive terminal menu. |
 
 Running ROOTWISE without a subcommand also opens the interactive menu.
@@ -202,6 +224,69 @@ Restore a snapshot to a destination directory:
 ```bash
 python -m rootwise.cli restore ./rootwise-snapshots/ARCHIVE.tar.gz ./rootwise-snapshots/MANIFEST.json ./restored-copy
 ```
+
+Clone a repository into a new destination:
+
+```bash
+rootwise clone https://github.com/OWNER/REPOSITORY.git ./REPOSITORY
+```
+
+Remote clones are blocked while network mode is `offline`, the default.
+To permit a remote clone, explicitly change the setting first:
+
+```bash
+rootwise settings --network online
+rootwise clone https://github.com/OWNER/REPOSITORY.git ./REPOSITORY
+```
+
+Changing the setting does not initiate a connection. Network access occurs
+only when an operation that needs it, such as the explicitly invoked remote
+clone, is run. Return to the safer default when finished:
+
+```bash
+rootwise settings --network offline
+```
+
+Display settings or change terminal color styling:
+
+```bash
+rootwise settings
+rootwise settings --color off
+rootwise settings --color on
+```
+
+Settings are stored locally in the user's configuration directory. Color
+styling still respects `NO_COLOR`, non-interactive output, and `TERM=dumb`.
+
+Browse the current project:
+
+```bash
+rootwise tree
+rootwise tree . --max-depth 3
+rootwise tree . --all
+```
+
+Prepare a handoff and print its Markdown to standard output:
+
+```bash
+rootwise handoff . --task "Continue implementing the workspace tests"
+```
+
+Include additional files explicitly:
+
+```bash
+rootwise handoff . --task "Review the CLI integration" \
+  --file rootwise/cli.py --file tests/test_menu.py
+```
+
+Save the handoff to a new file:
+
+```bash
+rootwise handoff . --task "Continue the release review" \
+  --output ./handoff-review.md
+```
+
+The output file must not already exist. Review handoff contents before sharing.
 
 Open the interactive menu:
 
