@@ -2,349 +2,451 @@
 
 **Strong roots. Better software.**
 
-ROOTWISE helps developers understand the condition of a software repository before sharing, publishing, or preparing it for deployment.
+ROOTWISE is a local-first Python command-line tool for repository inspection, readiness assessment, and digital preservation.
 
-It inspects repository foundations, identifies missing essentials, records evidence, and explains what needs attention and what remains uncertain. Its goal is not to make release decisions for developers, but to help them make those decisions with better information.
+It helps developers understand what their software repositories contain, identify missing foundations, review evidence, preserve project files, and prepare for publication with better information.
+
+ROOTWISE supports human judgment. It does not make release decisions, claim certainty it cannot justify, or silently take control of a developer's work.
 
 **ROOTWISE://LOCAL**
 
 *Repository care · Digital preservation · Developer control*
 
+---
+
 ## Why ROOTWISE Exists
 
-Software projects grow through experiments, decisions, documentation, and accumulated work. Before sharing a project, it helps to understand what is present, what is missing, and what might need care.
+Software projects grow through experiments, decisions, documentation, and accumulated work. Before sharing or publishing a project, developers need a clearer understanding of what is present, what is missing, and what deserves attention.
 
-ROOTWISE provides a local workspace for repository inspection and preservation. It favors clear evidence over assumptions, cautious operations over destructive shortcuts, and developer choice over automatic decisions.
+ROOTWISE provides practical tools for inspecting repository foundations, evaluating known conditions, observing local Git changes, creating and verifying preservation snapshots, and preparing reviewable project handoffs.
+
+Its approach is deliberate:
+
+- Preserve intent and context where possible.
+- Prefer evidence over assumptions.
+- Make limitations visible.
+- Protect existing files from unintended overwrites.
+- Keep network access under operator control.
+- Leave project changes and release decisions to the developer.
 
 ## Core Principles
 
-- **Readiness before release:** Identify gaps before a project is published or deployed.
-- **Evidence before assumptions:** Explain findings and provide reasons for recommendations.
-- **Honest uncertainty:** Distinguish performed checks from unknowns and limitations.
-- **Preservation by default:** Inspect projects without modifying their contents or executing inspected code.
-- **Platform awareness:** Account for different hosting and deployment environments without treating their requirements as interchangeable.
-- **Developer ownership:** Recommend improvements while leaving decisions and changes to the developer.
-- **Local-first operation:** Keep repository inspection and preservation local unless the developer explicitly chooses otherwise.
+- **Readiness before release:** Identify gaps before publication or deployment.
+- **Evidence before assumptions:** Ground findings in the checks actually performed.
+- **Honest uncertainty:** Distinguish observed conditions from unknowns and unperformed checks.
+- **Preservation with care:** Avoid executing inspected project code during repository inspection.
+- **Developer ownership:** Support decisions without taking authority away from the operator.
+- **Local-first operation:** Keep work local unless an explicitly requested operation requires otherwise.
+- **Safe file handling:** Apply safeguards to preservation operations and existing destinations.
+- **Independent development:** Welcome contributions, forks, and projects built from ROOTWISE.
 
 ## Features
 
-### Repository Inspection
+### Repository inspection
 
-Examine repository structure and essential project files. Identify missing documentation, unexpected file types, empty files, and other findings supported by the checks performed.
+Inspect repository foundations and report findings supported by the checks performed.
 
-### Repository Health Reports
+### Health reports
 
-Summarize inspection findings and provide actionable recommendations. Reports distinguish observed conditions from checks that have not been performed.
+Review repository conditions, evidence, recommendations, and limitations. Health reports provide useful information, not a guarantee of security, correctness, or release readiness.
 
-### Snapshots and Preservation
+### Snapshots and preservation
 
-Create repository snapshots, verify snapshot integrity, and restore preserved files with safeguards against unsafe paths and unintended overwrites.
+Create project snapshots, verify archives against manifests, and restore preserved files subject to safety checks.
 
-Snapshots are preservation tools, not substitutes for independent backups or a complete disaster-recovery strategy.
+Snapshots supplement an independent backup strategy. They do not replace one.
 
-### Git Synchronization Observation
+### Git observation
 
-Observe repository status and classify potential synchronization candidates. ROOTWISE reports changes for review rather than silently staging or publishing them.
+Observe local Git state and potential publication or synchronization risks without silently staging, committing, pushing, or publishing changes.
 
-### Cloneable Workspace and Project Tree
+### Repository cloning
 
-Clone Git repositories into new destinations without replacing existing paths. Browse project structure with a readable tree view that hides common generated directories by default. Use depth limits to keep large projects navigable, or explicitly include normally excluded entries when investigating build environments and generated files.
+Clone a Git repository into a new destination. Remote cloning is subject to the configured network mode.
 
-Cloning can access the network when a remote URL is used. Tree browsing does not execute project code.
+### Project trees
 
-### Handoff and Continuity
+Browse project structure with configurable depth and optional inclusion of normally excluded entries. Tree browsing does not execute project code.
 
-Prepare a recipient-neutral Markdown handoff containing a task description,
-a bounded project tree, the README when available, and explicitly selected
-project files. Handoffs are generated locally and can be printed to standard
-output or saved to a new file without overwriting an existing destination.
+### Project handoffs
 
-The handoff does not execute project code, run tests, or transmit content.
-Sensitive-looking paths are filtered, but filename checks cannot guarantee
-that all included text is safe to share. Review the complete document before
-sharing it.
+Prepare local Markdown handoffs containing task context, a bounded project tree, the README when available, and explicitly selected project files.
 
-### Operator Guidance
+Handoffs are not transmitted automatically. Review the generated output before sharing it.
 
-Use a guided terminal menu to access repository scans, health reports, snapshot operations, synchronization observation, and reference information.
+### CYBERGARDEN interface
 
-## The ROOTWISE Terminal
+CYBERGARDEN provides ROOTWISE's guided terminal experience and neon cyberpunk botanical identity.
 
-ROOTWISE uses a neon cyberpunk botanical presentation style designed to remain readable and practical.
+ROOTWISE's core operations remain usable independently of a separate CYBERGARDEN installation.
 
-The local terminal interface includes:
+---
 
-- A consistent `ROOTWISE://LOCAL` identity banner.
-- Grouped menu options for repository care, preservation, change observation, and guidance.
-- Framed menus with aligned borders and bounded long labels.
-- Terminal color detection and plain-text fallbacks.
-- Clear session-exit messaging that reinforces developer control.
+## Requirements
 
-The visual design supports the work rather than hiding it. Findings, limitations, and operator choices remain the focus.
+- Python 3.10 or newer.
+- Git for Git-based observation and repository cloning.
+- A supported Python packaging environment for installation.
 
-## Architecture
+ROOTWISE has no third-party runtime dependencies. Its build configuration uses setuptools. Installing the package may require access to package repositories if the necessary build tools are not already available.
 
-ROOTWISE is a standalone Python command-line application.
+## Installation
 
-Its responsibilities are separated into two broad areas:
+### 1. Clone the repository
 
-- **Core operations:** Repository inspection, health reporting, snapshots, restoration safeguards, and Git synchronization observation.
-- **Terminal presentation:** Branding, colors, layout, menu frames, prompts, and display formatting.
-
-The current terminal presentation implementation lives locally in `rootwise/cybergarden.py`. ROOTWISE does not require the separate CYBERGARDEN project to be installed.
-
-The longer-term direction is to develop reusable presentation capabilities and configurable settings without coupling ROOTWISE's core behavior to a particular interface library.
-
-## Publishing Is Not Deployment
-
-ROOTWISE treats source-code publication and production deployment as separate readiness stages.
-
-A project may be ready to publish on GitHub without being ready for production use. Hosting requirements, deployment configuration, operational security, and runtime behavior require appropriate checks for their specific context.
-
-A ROOTWISE report is evidence to support a decision, not a guarantee that a repository is safe, complete, secure, or production-ready.
-
-## Safety and Design Commitments
-
-- Read-only inspection by default.
-- No execution of inspected project code as part of repository inspection.
-- Evidence-backed findings and clearly stated limitations.
-- No fabricated universal readiness score.
-- Safeguards around snapshot verification and restoration.
-- No silent staging or publishing of Git changes.
-- Developer-controlled changes and release decisions.
-- Local operation without mandatory runtime dependencies.
-
-## Installation and Usage
-
-ROOTWISE requires Python 3.10 or newer.
-
-From the repository root, you can run the application with:
+Replace `OWNER` with the GitHub account or organization hosting ROOTWISE.
 
 ```bash
-python -m rootwise.cli
+git clone https://github.com/OWNER/ROOTWISE.git
+cd ROOTWISE
 ```
 
-When installed in an environment, the `rootwise` command is available through the project's configured console entry point.
-
-The terminal menu guides you through the available operations. Review findings and recommendations before making changes to your repository.
-
-## Development and Testing
-
-ROOTWISE is under active development. Supported checks and workflows will expand incrementally, with automated tests protecting existing behavior.
-
-Run the test suite from the repository root:
+### 2. Create a virtual environment
 
 ```bash
-python -m unittest discover -s tests -v
+python -m venv .venv
 ```
 
-The current tests cover repository inspection, health reports, snapshot creation and verification, restoration safeguards, synchronization observation, and terminal presentation behavior.
+Activate it:
 
-## Project Philosophy
+```bash
+source .venv/bin/activate
+```
 
-**Inspect honestly. Preserve carefully. Grow deliberately.**
+### 3. Install ROOTWISE
 
-ROOTWISE exists to help developers care for the foundations of their projects while keeping ownership, context, and final decisions in human hands.
+```bash
+python -m pip install .
+```
 
-## Command Reference
+### 4. Verify the installation
 
-ROOTWISE can be used through its interactive terminal menu or through
-individual commands. Run commands from the repository root during
-development.
+```bash
+rootwise --help
+```
 
-### Available commands
+For an editable development installation, use:
 
-| Command | Purpose |
-|---|---|
-| `--help` | List available commands and general usage. |
-| `inspect [PATH]` | Inspect a repository and report detected findings. |
-| `health [PATH]` | Summarize repository health, findings, and recommendations. |
-| `observe [PATH]` | Observe repository and Git changes without staging or syncing them. |
-| `snapshot [PATH]` | Create a preservation archive and its manifest. |
-| `verify ARCHIVE MANIFEST` | Verify a snapshot against its manifest. |
-| `restore ARCHIVE MANIFEST DESTINATION` | Restore a verified snapshot to a destination, subject to safety checks. |
-| `clone REPOSITORY DESTINATION` | Clone a Git repository into a destination that must not already exist. |
-| `tree [PATH] [--all] [--max-depth N]` | Display a project tree with optional generated entries and depth limits. |
-| `handoff [PATH] --task TEXT [--file PATH] [--output FILE]` | Prepare a local Markdown handoff for any recipient. |
-| `settings [--color on|off] [--network offline|online]` | Display or change local operator preferences. |
-| `menu` | Open the interactive terminal menu. |
+```bash
+python -m pip install -e .
+```
 
-Running ROOTWISE without a subcommand also opens the interactive menu.
-
-### Usage examples
-
-Show general help:
+If you prefer to run the CLI directly from the source tree without installing the package, use:
 
 ```bash
 python -m rootwise.cli --help
 ```
 
-Inspect the current repository:
+## Quick Start
+
+Run ROOTWISE from the repository you want to inspect.
 
 ```bash
-python -m rootwise.cli inspect .
+rootwise inspect .
+rootwise health .
+rootwise tree .
+rootwise observe .
+rootwise
 ```
 
-Generate a health report:
+The final command opens the interactive menu when no subcommand is provided.
+
+Start with inspection and health reporting before deciding what preservation or workspace operations are appropriate for your project.
+
+---
+
+## Command Reference
+
+ROOTWISE provides the following commands.
+
+### `rootwise inspect`
+
+Inspect repository foundations.
 
 ```bash
-python -m rootwise.cli health .
+rootwise inspect
+rootwise inspect /path/to/project
 ```
 
-Observe repository changes:
+If no path is supplied, the current directory is used.
+
+### `rootwise health`
+
+Generate a repository health report.
 
 ```bash
-python -m rootwise.cli observe .
+rootwise health
+rootwise health /path/to/project
 ```
 
-Create a snapshot using ROOTWISE's configured default output directory:
+The report describes the conditions ROOTWISE checks. It does not run your project's test suite or independently approve publication.
+
+### `rootwise snapshot`
+
+Create a preservation snapshot.
 
 ```bash
-python -m rootwise.cli snapshot .
+rootwise snapshot .
+rootwise snapshot /path/to/project --output /path/to/snapshots
 ```
 
-Choose a specific snapshot output directory:
+The output directory is optional. Consult the command's help for the exact artifact paths and output behavior.
+
+### `rootwise verify`
+
+Verify a snapshot archive against its manifest.
 
 ```bash
-python -m rootwise.cli snapshot . --output ./rootwise-snapshots
+rootwise verify /path/to/archive.tar.gz /path/to/manifest.json
 ```
 
-Verify a snapshot using its archive and manifest paths.
+Use the actual archive and manifest paths produced by your snapshot operation.
 
-Replace `ARCHIVE.tar.gz` and `MANIFEST.json` below with the exact
-archive and manifest paths printed by the `snapshot` command. These
-filenames are illustrative placeholders.
+### `rootwise restore`
+
+Restore a snapshot into a destination.
 
 ```bash
-python -m rootwise.cli verify ./rootwise-snapshots/ARCHIVE.tar.gz ./rootwise-snapshots/MANIFEST.json
+rootwise restore /path/to/archive.tar.gz /path/to/manifest.json /path/to/destination
 ```
 
-Restore a snapshot to a destination directory:
+ROOTWISE applies restoration safety checks and requests confirmation before restoring by default. The `--yes` option skips the interactive confirmation.
+
+Use `--yes` only when you understand the destination and the consequences of restoring into it.
+
+### `rootwise observe`
+
+Observe local Git state and potential publication or synchronization risks.
 
 ```bash
-python -m rootwise.cli restore ./rootwise-snapshots/ARCHIVE.tar.gz ./rootwise-snapshots/MANIFEST.json ./restored-copy
+rootwise observe
+rootwise observe /path/to/project
 ```
 
-Clone a repository into a new destination:
+Observation does not itself synchronize or publish repository changes.
+
+### `rootwise clone`
+
+Clone a repository into a new destination.
 
 ```bash
-rootwise clone https://github.com/OWNER/REPOSITORY.git ./REPOSITORY
+rootwise clone REPOSITORY DESTINATION
 ```
 
-Remote clones are blocked while network mode is `offline`, the default.
-To permit a remote clone, explicitly change the setting first:
+For example, use a repository URL and a destination path appropriate to your environment.
+
+Remote cloning is blocked when ROOTWISE is configured for offline operation. Local repository cloning remains available where supported.
+
+### `rootwise tree`
+
+Display a project tree.
 
 ```bash
-rootwise settings --network online
-rootwise clone https://github.com/OWNER/REPOSITORY.git ./REPOSITORY
+rootwise tree .
+rootwise tree . --max-depth 2
+rootwise tree . --all
+rootwise tree . --all --max-depth 3
 ```
 
-Changing the setting does not initiate a connection. Network access occurs
-only when an operation that needs it, such as the explicitly invoked remote
-clone, is run. Return to the safer default when finished:
+Options:
+
+- `--max-depth MAX_DEPTH`: Limit the displayed tree depth. The minimum depth is 1.
+- `--all`: Include entries normally excluded from the default view.
+
+Tree browsing does not execute project code.
+
+### `rootwise handoff`
+
+Prepare a local Markdown handoff for a specific task.
 
 ```bash
-rootwise settings --network offline
+rootwise handoff . --task "Review publication readiness"
 ```
 
-Display settings or change terminal color styling:
+Select specific files when they are relevant:
+
+```bash
+rootwise handoff . \
+  --task "Review publication readiness" \
+  --file README.md \
+  --file pyproject.toml
+```
+
+Additional options:
+
+- `--output OUTPUT`: Write the handoff to a specified output file.
+- `--max-tree-depth MAX_TREE_DEPTH`: Set the maximum project tree depth; the default is 3.
+- `--file SELECTED_FILES`: Include an explicitly selected file. This option can be repeated.
+
+The task description is required. By default, the generated Markdown is written to standard output. An explicitly specified output file must not already exist.
+
+Handoffs are generated locally and are not transmitted automatically. File filters and safety checks reduce risk but cannot guarantee that every secret or sensitive detail will be excluded. Review the complete handoff before sharing it.
+
+### `rootwise settings`
+
+Manage local color and network preferences.
 
 ```bash
 rootwise settings
 rootwise settings --color off
 rootwise settings --color on
+rootwise settings --network offline
+rootwise settings --network online
 ```
 
-Settings are stored locally in the user's configuration directory. Color
-styling still respects `NO_COLOR`, non-interactive output, and `TERM=dumb`.
+Options:
 
-Browse the current project:
+- `--color {on,off}`: Enable or disable ROOTWISE's configured color preference.
+- `--network {offline,online}`: Set the network mode.
+
+Offline mode is the default. Changing network mode does not initiate a network connection. Online mode permits explicitly invoked network operations; it does not authorize background activity.
+
+Color output may also be affected by terminal capabilities and environment settings such as `NO_COLOR` and `TERM=dumb`.
+
+### `rootwise menu`
+
+Open the interactive menu.
 
 ```bash
-rootwise tree
-rootwise tree . --max-depth 3
-rootwise tree . --all
+rootwise menu
 ```
 
-Prepare a handoff and print its Markdown to standard output:
+Running `rootwise` without a subcommand opens the menu as well.
+
+The menu provides access to:
+
+1. Repository inspection
+2. Snapshot creation
+3. Snapshot verification
+4. Snapshot restoration
+5. Git observation
+6. Health reporting
+7. Operator reference
+8. Repository cloning
+9. Project tree browsing
+10. Project handoffs
+11. Operator settings
+
+Choose `q` to exit.
+
+For the authoritative arguments and options of any command, run:
 
 ```bash
-rootwise handoff . --task "Continue implementing the workspace tests"
+rootwise COMMAND --help
 ```
 
-Include additional files explicitly:
+Replace `COMMAND` with the relevant subcommand.
+
+---
+
+## Network, Privacy, and Safety
+
+ROOTWISE is designed for local-first operation and operator-directed workflows.
+
+### Network controls
+
+- Offline mode is the default.
+- Remote cloning is blocked in offline mode.
+- Local operations remain available where supported.
+- Changing network mode does not establish a connection.
+- ROOTWISE does not silently publish or synchronize changes.
+
+### File preservation
+
+- Snapshot verification checks an archive against its manifest.
+- Restoration applies safety checks and requires confirmation by default.
+- Existing destinations receive protective handling where specified by the relevant operation.
+- Snapshots are not a substitute for independently maintained backups.
+
+### Inspection boundaries
+
+ROOTWISE reports what its checks support. It does not automatically prove that a repository is secure, that dependencies are trustworthy, or that software is ready for production.
+
+### Handoff boundaries
+
+Handoffs are local artifacts intended for review. Inspect them for credentials, personal information, proprietary material, and other content that should not be shared.
+
+### Operator responsibility
+
+Review findings, verify important assumptions, run the project's own tests, and assess security and release requirements independently. ROOTWISE is an aid to responsible development, not a replacement for it.
+
+---
+
+## Development and Testing
+
+Clone the repository and enter its directory. Create and activate a virtual environment, then install the project in editable mode as described above.
+
+Run the test suite:
 
 ```bash
-rootwise handoff . --task "Review the CLI integration" \
-  --file rootwise/cli.py --file tests/test_menu.py
+python -m unittest discover -s tests -v
 ```
 
-Save the handoff to a new file:
+Compile the application and tests:
 
 ```bash
-rootwise handoff . --task "Continue the release review" \
-  --output ./handoff-review.md
+python -m compileall -q rootwise tests
 ```
 
-The output file must not already exist. Review handoff contents before sharing.
+These commands check Python compilation and execute the repository's unit tests. They do not, by themselves, establish security or release readiness.
 
-Open the interactive menu:
+When contributing, include relevant tests and documentation updates for behavioral changes.
+
+## Authorship and Attribution
+
+ROOTWISE was originally created by **Vera Lynn DeGraw (`VeraLynnDegraw`)**.
+
+The original project history and applicable copyright notices should remain identifiable as ROOTWISE evolves.
+
+Contributions, forks, and derivative projects are welcome. Developers may identify their own projects and claim authorship of their original contributions without claiming authorship of work they did not create.
+
+When redistributing ROOTWISE or covered portions of it, retain the applicable original copyright notice and MIT License terms. Contributors and downstream maintainers are encouraged to document meaningful modifications and recognize the people responsible for them.
+
+The MIT License does not require downstream projects to use ROOTWISE's name, imply endorsement, or adopt the original project's identity. This project encourages transparent attribution while respecting the freedom the license grants.
+
+### Forks, Upstream Synchronization, and Independent Projects
+
+Developers are welcome to fork ROOTWISE, synchronize their forks with the original repository, and build independent projects from their own branches.
+
+A fork owner may identify themselves as the maintainer or creator of their own project and document their original contributions. This should not imply that they created the original ROOTWISE project or work authored by other contributors.
+
+For GitHub-based development:
+
+- **`origin`** should point to your own fork or repository.
+- **`upstream`** may point to the original ROOTWISE repository when you want to track and incorporate its updates.
+- Synchronization is a deliberate maintenance action. Review upstream changes and resolve conflicts before integrating them.
+- Preserve applicable copyright notices and the MIT License when redistributing covered work.
+- Update your own project's README, metadata, and contributor acknowledgments to accurately describe its identity, maintainers, and development history.
+
+Example remote configuration for a fork:
 
 ```bash
-python -m rootwise.cli menu
+git remote -v
+git remote add upstream https://github.com/ORIGINAL-OWNER/ROOTWISE.git
+git fetch upstream
 ```
 
-Replace `python -m rootwise.cli` with `rootwise` when using an installed
-console command.
+Replace `ORIGINAL-OWNER` with the actual GitHub account or organization that hosts the original repository. If `upstream` is already configured, inspect it rather than adding it again.
 
-### Read-only commands and file-writing commands
-
-**Read-only operations**
-
-- `inspect` examines repository structure and reports findings.
-- `health` summarizes the inspection scope and known limitations. It does
-  not, by itself, run the test suite or approve a release.
-- `observe` reports repository state and potential changes. It does not
-  stage, commit, push, or synchronize changes.
-
-**Operations that write files**
-
-- `snapshot` creates an archive and manifest in its output directory.
-- `restore` writes restored files to the destination directory. Review the
-  destination before proceeding. ROOTWISE includes safeguards against
-  overwriting existing files.
-- The interactive menu may offer both read-only and file-writing operations.
-  Review each operation before confirming it.
-
-Restoration normally requires explicit confirmation. The `--yes` option
-skips that confirmation prompt; it does not mean you should skip checking
-the destination or the snapshot you intend to restore.
-
-### Terminal colors
-
-ROOTWISE uses the local CYBERGARDEN presentation layer for colored terminal
-output. Colors distinguish headings, status messages, findings, warnings,
-errors, and summary values.
-
-Color output is automatically disabled when:
-
-- Standard output is not an interactive terminal.
-- The `NO_COLOR` environment variable is present.
-- `TERM` is set to `dumb`.
-
-This keeps redirected output and logs readable instead of filling them with
-ANSI escape codes.
-
-To request plain output explicitly:
+To review the original project's branches and recent history before synchronizing, use:
 
 ```bash
-NO_COLOR=1 python -m rootwise.cli health .
+git branch -a
+git log --oneline --decorate -10
 ```
 
-### Interpreting results
+Choose an appropriate integration method for your branch and review the resulting changes before pushing. Synchronization does not transfer authorship, automatically resolve licensing questions, or guarantee compatibility.
 
-ROOTWISE reports evidence and findings within the scope of the checks it
-actually performs. A healthy-looking report is not a guarantee that software
-is secure, fully tested, or ready to publish. Recommendations identify work
-that may need attention; they are not automatic authorization to change,
-release, or publish a repository.
+ROOTWISE welcomes independent evolution. Preserve the project's provenance while allowing each fork to establish its own identity.
+
+**Preserve the origin. Respect the contributions. Leave room for others to grow.**
+
+## License
+
+ROOTWISE is released under the MIT License. See [`LICENSE`](LICENSE) for the complete license text and applicable copyright notice.
+
+---
+
+**ROOTWISE**
+
+*Strong roots. Better software.*

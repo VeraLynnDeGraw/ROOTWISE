@@ -9,6 +9,9 @@ version = "0.1.0"
 description = "A local-first tool for repository readiness and safe project preservation."
 readme = "README.md"
 license = "MIT"
+authors = [
+    { name = "Vera Lynn DeGraw" },
+]
 requires-python = ">=3.10"
 dependencies = []
 
