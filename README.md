@@ -127,3 +127,139 @@ The current tests cover repository inspection, health reports, snapshot creation
 **Inspect honestly. Preserve carefully. Grow deliberately.**
 
 ROOTWISE exists to help developers care for the foundations of their projects while keeping ownership, context, and final decisions in human hands.
+
+## Command Reference
+
+ROOTWISE can be used through its interactive terminal menu or through
+individual commands. Run commands from the repository root during
+development.
+
+### Available commands
+
+| Command | Purpose |
+|---|---|
+| `--help` | List available commands and general usage. |
+| `inspect [PATH]` | Inspect a repository and report detected findings. |
+| `health [PATH]` | Summarize repository health, findings, and recommendations. |
+| `observe [PATH]` | Observe repository and Git changes without staging or syncing them. |
+| `snapshot [PATH]` | Create a preservation archive and its manifest. |
+| `verify ARCHIVE MANIFEST` | Verify a snapshot against its manifest. |
+| `restore ARCHIVE MANIFEST DESTINATION` | Restore a verified snapshot to a destination, subject to safety checks. |
+| `menu` | Open the interactive terminal menu. |
+
+Running ROOTWISE without a subcommand also opens the interactive menu.
+
+### Usage examples
+
+Show general help:
+
+```bash
+python -m rootwise.cli --help
+```
+
+Inspect the current repository:
+
+```bash
+python -m rootwise.cli inspect .
+```
+
+Generate a health report:
+
+```bash
+python -m rootwise.cli health .
+```
+
+Observe repository changes:
+
+```bash
+python -m rootwise.cli observe .
+```
+
+Create a snapshot using ROOTWISE's configured default output directory:
+
+```bash
+python -m rootwise.cli snapshot .
+```
+
+Choose a specific snapshot output directory:
+
+```bash
+python -m rootwise.cli snapshot . --output ./rootwise-snapshots
+```
+
+Verify a snapshot using its archive and manifest paths.
+
+Replace `ARCHIVE.tar.gz` and `MANIFEST.json` below with the exact
+archive and manifest paths printed by the `snapshot` command. These
+filenames are illustrative placeholders.
+
+```bash
+python -m rootwise.cli verify ./rootwise-snapshots/ARCHIVE.tar.gz ./rootwise-snapshots/MANIFEST.json
+```
+
+Restore a snapshot to a destination directory:
+
+```bash
+python -m rootwise.cli restore ./rootwise-snapshots/ARCHIVE.tar.gz ./rootwise-snapshots/MANIFEST.json ./restored-copy
+```
+
+Open the interactive menu:
+
+```bash
+python -m rootwise.cli menu
+```
+
+Replace `python -m rootwise.cli` with `rootwise` when using an installed
+console command.
+
+### Read-only commands and file-writing commands
+
+**Read-only operations**
+
+- `inspect` examines repository structure and reports findings.
+- `health` summarizes the inspection scope and known limitations. It does
+  not, by itself, run the test suite or approve a release.
+- `observe` reports repository state and potential changes. It does not
+  stage, commit, push, or synchronize changes.
+
+**Operations that write files**
+
+- `snapshot` creates an archive and manifest in its output directory.
+- `restore` writes restored files to the destination directory. Review the
+  destination before proceeding. ROOTWISE includes safeguards against
+  overwriting existing files.
+- The interactive menu may offer both read-only and file-writing operations.
+  Review each operation before confirming it.
+
+Restoration normally requires explicit confirmation. The `--yes` option
+skips that confirmation prompt; it does not mean you should skip checking
+the destination or the snapshot you intend to restore.
+
+### Terminal colors
+
+ROOTWISE uses the local CYBERGARDEN presentation layer for colored terminal
+output. Colors distinguish headings, status messages, findings, warnings,
+errors, and summary values.
+
+Color output is automatically disabled when:
+
+- Standard output is not an interactive terminal.
+- The `NO_COLOR` environment variable is present.
+- `TERM` is set to `dumb`.
+
+This keeps redirected output and logs readable instead of filling them with
+ANSI escape codes.
+
+To request plain output explicitly:
+
+```bash
+NO_COLOR=1 python -m rootwise.cli health .
+```
+
+### Interpreting results
+
+ROOTWISE reports evidence and findings within the scope of the checks it
+actually performs. A healthy-looking report is not a guarantee that software
+is secure, fully tested, or ready to publish. Recommendations identify work
+that may need attention; they are not automatic authorization to change,
+release, or publish a repository.
