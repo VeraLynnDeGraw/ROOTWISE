@@ -1,8 +1,6 @@
 """Neon cyberpunk terminal interface for ROOTWISE."""
 
 from pathlib import Path
-import os
-import sys
 
 from rootwise.inspector import inspect_repository
 from rootwise.health_report import build_health_report
@@ -14,82 +12,19 @@ from rootwise.snapshots import (
 from rootwise.sync_observer import observe_sync_candidates
 
 
-class Neon:
-    """Cyberpunk terminal palette with a plain-text fallback."""
-
-    CYAN = "\033[38;5;51m"
-    MAGENTA = "\033[38;5;201m"
-    LIME = "\033[38;5;118m"
-    PURPLE = "\033[38;5;141m"
-    BLUE = "\033[38;5;39m"
-    PINK = "\033[38;5;213m"
-    AMBER = "\033[38;5;220m"
-    RED = "\033[38;5;196m"
-    DIM = "\033[38;5;244m"
-    WHITE = "\033[38;5;255m"
-    BOLD = "\033[1m"
-    RESET = "\033[0m"
-
-    @classmethod
-    def enabled(cls) -> bool:
-        return (
-            sys.stdout.isatty()
-            and "NO_COLOR" not in os.environ
-            and os.environ.get("TERM") != "dumb"
-        )
-
-    @classmethod
-    def paint(cls, text: str, *styles: str) -> str:
-        if not cls.enabled():
-            return text
-        return "".join(styles) + text + cls.RESET
-
-
-def neon_print(
-    text: str = "",
-    *styles: str,
-    end: str = "\n",
-) -> None:
-    print(Neon.paint(text, *styles), end=end)
-
-
-def line(char: str = "━", color: str | None = None) -> None:
-    neon_print("  " + char * 46, *( [color] if color else [Neon.DIM] ))
-
-
-def banner() -> None:
-    """Display the ROOTWISE cyberpunk identity."""
-    neon_print()
-    neon_print("  +------------------------------------------------+", Neon.CYAN)
-    neon_print("  |                                                |", Neon.CYAN)
-    neon_print("  |  ROOTWISE://LOCAL                              |", Neon.CYAN, Neon.BOLD)
-    neon_print("  |                                                |", Neon.CYAN)
-    neon_print("  |  REPOSITORY CARE // DIGITAL PRESERVATION       |", Neon.MAGENTA)
-    neon_print("  |  LOCAL BY DESIGN // YOURS TO DIRECT            |", Neon.LIME)
-    neon_print("  |                                                |", Neon.CYAN)
-    neon_print("  +------------------------------------------------+", Neon.CYAN)
-    neon_print()
-
-
-def section(title: str) -> None:
-    neon_print()
-    neon_print(f"  ◈ {title.upper()}", Neon.MAGENTA, Neon.BOLD)
-    line("─", Neon.PURPLE)
-
-
-def ask_path(prompt: str, default: str | None = None) -> Path:
-    hint = f" [{default}]" if default else ""
-    answer = input(
-        Neon.paint(f"  > {prompt}{hint}: ", Neon.CYAN, Neon.BOLD)
-    ).strip()
-
-    if not answer and default is not None:
-        answer = default
-
-    if not answer:
-        raise ValueError("A path is required.")
-
-    return Path(answer).expanduser()
+from rootwise.cybergarden import (
+    Neon,
+    ask_path,
+    dashboard_header,
+    line,
+    menu_frame_bottom,
+    menu_frame_text,
+    menu_frame_top,
+    menu_item,
+    menu_zone,
+    neon_print,
+    section,
+)
 
 
 def show_findings(report: dict) -> None:
@@ -350,21 +285,28 @@ def run_menu() -> None:
 
     try:
         while True:
-            banner()
+            dashboard_header()
 
-            neon_print("  ROOTWISE CONSOLE", Neon.PURPLE, Neon.BOLD)
-            neon_print("  STATUS :: ONLINE", Neon.LIME)
-            line("─", Neon.CYAN)
-            neon_print()
+            menu_frame_top()
+            menu_frame_text("ROOTWISE CONSOLE", Neon.PURPLE, Neon.BOLD)
 
-            for key, (label, _) in actions.items():
-                neon_print(f"  [{key}] ", Neon.MAGENTA, Neon.BOLD, end="")
-                neon_print(label, Neon.WHITE)
+            menu_zone("Tend the Garden", Neon.LIME)
+            menu_item("1", actions["1"][0])
+            menu_item("6", actions["6"][0])
 
-            neon_print()
-            neon_print("  [q] ", Neon.CYAN, Neon.BOLD, end="")
-            neon_print("Disconnect", Neon.DIM)
-            line("─", Neon.PURPLE)
+            menu_zone("Preserve", Neon.PURPLE)
+            menu_item("2", actions["2"][0])
+            menu_item("3", actions["3"][0])
+            menu_item("4", actions["4"][0])
+
+            menu_zone("Observe Change", Neon.CYAN)
+            menu_item("5", actions["5"][0])
+
+            menu_zone("Field Guide", Neon.PINK)
+            menu_item("7", actions["7"][0])
+
+            menu_item("q", "Disconnect", Neon.CYAN, Neon.DIM)
+            menu_frame_bottom()
 
             try:
                 choice = input(
